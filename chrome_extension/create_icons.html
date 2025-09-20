@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Icons for Cookie Logger Extension</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .icon-container {
+            display: inline-block;
+            margin: 10px;
+            text-align: center;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background: white;
+        }
+        .instructions {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="instructions">
+        <h2>Cookie Logger Extension Icons</h2>
+        <p>Right-click on each icon below and select "Save image as..." to save them as PNG files:</p>
+        <ul>
+            <li>Save the first icon as <code>icon16.png</code></li>
+            <li>Save the second icon as <code>icon48.png</code></li>
+            <li>Save the third icon as <code>icon128.png</code></li>
+        </ul>
+    </div>
+
+    <div class="icon-container">
+        <h3>16x16 Icon</h3>
+        <canvas id="icon16" width="16" height="16"></canvas>
+    </div>
+
+    <div class="icon-container">
+        <h3>48x48 Icon</h3>
+        <canvas id="icon48" width="48" height="48"></canvas>
+    </div>
+
+    <div class="icon-container">
+        <h3>128x128 Icon</h3>
+        <canvas id="icon128" width="128" height="128"></canvas>
+    </div>
+
+    <script>
+        function createIcon(canvasId, size) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+            
+            // Draw background circle
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size/2 - 1, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Draw cookie
+            ctx.fillStyle = '#8B4513';
+            const cookieSize = size * 0.6;
+            const cookieX = (size - cookieSize) / 2;
+            const cookieY = (size - cookieSize) / 2;
+            
+            ctx.fillRect(cookieX, cookieY, cookieSize, cookieSize);
+            
+            // Draw chocolate chips
+            ctx.fillStyle = '#654321';
+            const chipSize = size * 0.1;
+            const chips = [
+                {x: cookieX + cookieSize * 0.25, y: cookieY + cookieSize * 0.25},
+                {x: cookieX + cookieSize * 0.75, y: cookieY + cookieSize * 0.25},
+                {x: cookieX + cookieSize * 0.25, y: cookieY + cookieSize * 0.75},
+                {x: cookieX + cookieSize * 0.75, y: cookieY + cookieSize * 0.75},
+                {x: cookieX + cookieSize * 0.5, y: cookieY + cookieSize * 0.5}
+            ];
+            
+            chips.forEach(chip => {
+                ctx.beginPath();
+                ctx.arc(chip.x, chip.y, chipSize/2, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+        }
+        
+        // Create all icons
+        createIcon('icon16', 16);
+        createIcon('icon48', 48);
+        createIcon('icon128', 128);
+    </script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Logger - Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            background: #e9ecef;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🍪 Cookie Logger Frontend Test</h1>
+        <p>This page tests the frontend dashboard functionality.</p>
+        
+        <div class="status" id="status">
+            <strong>Status:</strong> Initializing...
+        </div>
+        
+        <div>
+            <button class="test-button" onclick="testDashboard()">Test Dashboard</button>
+            <button class="test-button" onclick="testSampleData()">Add Sample Data</button>
+            <button class="test-button" onclick="testSearch()">Test Search</button>
+            <button class="test-button" onclick="openDashboard()">Open Dashboard</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.innerHTML = `<strong>Status:</strong> ${message}`;
+            status.className = `status ${type}`;
+        }
+
+        function testDashboard() {
+            updateStatus('Testing dashboard initialization...', 'info');
+            
+            try {
+                // Test if dashboard is available
+                if (typeof window.dashboard !== 'undefined') {
+                    updateStatus('Dashboard loaded successfully!', 'success');
+                    document.getElementById('results').innerHTML = `
+                        <h3>Dashboard Test Results:</h3>
+                        <ul>
+                            <li>✅ Dashboard object exists</li>
+                            <li>✅ Cookies loaded: ${window.dashboard.cookies.length}</li>
+                            <li>✅ Filtered cookies: ${window.dashboard.filteredCookies.length}</li>
+                        </ul>
+                    `;
+                } else {
+                    updateStatus('Dashboard not loaded yet. Try opening the main dashboard first.', 'error');
+                }
+            } catch (error) {
+                updateStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function testSampleData() {
+            updateStatus('Adding sample data...', 'info');
+            
+            try {
+                if (typeof window.extensionConnector !== 'undefined') {
+                    window.extensionConnector.addMoreSampleData();
+                    updateStatus('Sample data added successfully!', 'success');
+                } else {
+                    updateStatus('Extension connector not loaded.', 'error');
+                }
+            } catch (error) {
+                updateStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function testSearch() {
+            updateStatus('Testing search functionality...', 'info');
+            
+            try {
+                if (typeof window.dashboard !== 'undefined') {
+                    // Test search
+                    window.dashboard.searchTerm = 'session';
+                    window.dashboard.filterAndRender();
+                    
+                    const filteredCount = window.dashboard.filteredCookies.length;
+                    updateStatus(`Search test completed. Found ${filteredCount} matching cookies.`, 'success');
+                } else {
+                    updateStatus('Dashboard not loaded.', 'error');
+                }
+            } catch (error) {
+                updateStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function openDashboard() {
+            window.open('index.html', '_blank');
+        }
+
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            updateStatus('Page loaded. Ready for testing.', 'success');
+        });
+    </script>
+</body>
+</html>
+
