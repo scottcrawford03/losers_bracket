@@ -36,7 +36,15 @@ class EspnS2Viewer {
         // Listen for cookie updates from the extension
         document.addEventListener('espnS2CookieUpdated', (event) => {
             this.handleCookieUpdate(event.detail.value);
+            // console.log(this.httpGet('http://localhost:8001/v1/matchups?espn_s2=' + event.detail.value));
         });
+    }
+
+    httpGet(theUrl) {
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.open( "GET", theUrl, false ); // false for synchronous request
+        xmlHttp.send( null );
+        return xmlHttp.responseText;
     }
 
     // Check for ESPN S2 cookie in DOM
@@ -54,6 +62,8 @@ class EspnS2Viewer {
         } else if (bodyDataAttribute) {
             cookieValue = bodyDataAttribute;
         }
+
+        
         
         if (cookieValue && cookieValue.trim() !== '') {
             this.handleCookieUpdate(cookieValue);
@@ -139,7 +149,7 @@ class EspnS2Viewer {
         // Check for cookie every 3 seconds
         this.refreshInterval = setInterval(() => {
             this.checkForCookie();
-        }, 3000);
+        }, 60000);
     }
 
     // Stop auto-refresh
