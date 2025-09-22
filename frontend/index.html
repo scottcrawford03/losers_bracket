@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESPN S2 Cookie Viewer</title>
+    <title>Fantasy Football Bracket</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -12,8 +12,8 @@
         <!-- Header -->
         <header class="header">
             <div class="header-content">
-                <h1><i class="fas fa-football-ball"></i> ESPN S2 Cookie Viewer</h1>
-                <p>Current ESPN S2 cookie value from your browser</p>
+                <h1><i class="fas fa-trophy"></i> Fantasy Football Bracket</h1>
+                <p>Current fantasy football matchups in tournament format</p>
             </div>
         </header>
 
@@ -23,59 +23,39 @@
             <section class="status-section">
                 <div class="status-card">
                     <div class="status-icon">
-                        <i class="fas fa-cookie-bite"></i>
+                        <i class="fas fa-football-ball"></i>
                     </div>
                     <div class="status-content">
-                        <h2 id="statusTitle">Checking for ESPN S2 Cookie...</h2>
-                        <p id="statusMessage">Please wait while we retrieve the cookie value</p>
+                        <h2 id="statusTitle">Loading Matchups...</h2>
+                        <p id="statusMessage">Please wait while we fetch the current fantasy football matchups</p>
                     </div>
                 </div>
             </section>
 
-            <!-- Cookie Display Section -->
-            <section class="cookie-section" id="cookieSection" style="display: none;">
-                <div class="cookie-card">
-                    <div class="cookie-header">
-                        <h3><i class="fas fa-key"></i> ESPN S2 Cookie Value</h3>
-                        <button id="copyBtn" class="copy-btn" title="Copy to Clipboard">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                    </div>
-                    <div class="cookie-value-container">
-                        <div id="cookieValue" class="cookie-value"></div>
-                    </div>
-                    <div class="cookie-info">
-                        <div class="info-item">
-                            <span class="label">Domain:</span>
-                            <span id="cookieDomain" class="value">-</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label">Last Updated:</span>
-                            <span id="lastUpdated" class="value">-</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label">Length:</span>
-                            <span id="cookieLength" class="value">-</span>
-                        </div>
+            <!-- Bracket Display Section -->
+            <section class="bracket-section" id="bracketSection" style="display: none;">
+                <div class="bracket-container">
+                    <div id="bracketDisplay" class="bracket-display">
+                        <!-- Bracket will be populated here -->
                     </div>
                 </div>
             </section>
 
-            <!-- No Cookie Section -->
-            <section class="no-cookie-section" id="noCookieSection" style="display: none;">
-                <div class="no-cookie-card">
-                    <div class="no-cookie-icon">
+            <!-- No Data Section -->
+            <section class="no-data-section" id="noDataSection" style="display: none;">
+                <div class="no-data-card">
+                    <div class="no-data-icon">
                         <i class="fas fa-exclamation-triangle"></i>
                     </div>
-                    <div class="no-cookie-content">
-                        <h3>No ESPN S2 Cookie Found</h3>
-                        <p>The ESPN S2 cookie is not currently available in your browser.</p>
+                    <div class="no-data-content">
+                        <h3>No Matchups Found</h3>
+                        <p>Unable to fetch fantasy football matchups at this time.</p>
                         <div class="help-text">
-                            <p><strong>To get the cookie:</strong></p>
+                            <p><strong>Please try:</strong></p>
                             <ul>
-                                <li>Visit any ESPN website (espn.com)</li>
-                                <li>Log in to your ESPN account</li>
-                                <li>Refresh this page</li>
+                                <li>Check if the API server is running on localhost:8001</li>
+                                <li>Verify the API endpoint is accessible</li>
+                                <li>Refresh the page to try again</li>
                             </ul>
                         </div>
                     </div>
@@ -86,10 +66,10 @@
             <section class="actions-section">
                 <div class="action-buttons">
                     <button id="refreshBtn" class="btn btn-primary">
-                        <i class="fas fa-sync-alt"></i> Refresh
+                        <i class="fas fa-sync-alt"></i> Refresh Matchups
                     </button>
-                    <button id="openEspnBtn" class="btn btn-secondary">
-                        <i class="fas fa-external-link-alt"></i> Open ESPN
+                    <button id="toggleViewBtn" class="btn btn-secondary">
+                        <i class="fas fa-eye"></i> Toggle View
                     </button>
                 </div>
             </section>

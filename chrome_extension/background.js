@@ -1,42 +1,75 @@
-// Background script for ESPN S2 Cookie Viewer extension
-let currentEspnS2Cookie = null;
+// Background script for ESPN Cookie Viewer extension
+let currentCookies = {};
+let cookieList = ['espn_s2']; // Default cookie list
 
-// Load espn_s2 cookie from storage when extension starts
-loadEspnS2FromStorage();
+// Load cookies and configuration from storage when extension starts
+loadCookiesFromStorage();
+loadCookieListFromStorage();
 
-// Function to save espn_s2 cookie to storage
-function saveEspnS2ToStorage() {
+// Function to save cookies to storage
+function saveCookiesToStorage() {
   try {
     chrome.storage.local.set({
-      espnS2Cookie: currentEspnS2Cookie
+      espnCookies: currentCookies
     }, () => {
       if (chrome.runtime.lastError) {
-        console.error('Error saving espn_s2 to Chrome storage:', chrome.runtime.lastError);
+        console.error('Error saving cookies to Chrome storage:', chrome.runtime.lastError);
       } else {
-        console.log('espn_s2 cookie saved to Chrome storage');
+        console.log('Cookies saved to Chrome storage');
       }
     });
   } catch (error) {
-    console.error('Error saving espn_s2 cookie to storage:', error);
+    console.error('Error saving cookies to storage:', error);
   }
 }
 
-// Function to load espn_s2 cookie from storage
-function loadEspnS2FromStorage() {
+// Function to load cookies from storage
+function loadCookiesFromStorage() {
   try {
-    chrome.storage.local.get(['espnS2Cookie'], (result) => {
-      if (result.espnS2Cookie) {
-        currentEspnS2Cookie = result.espnS2Cookie;
-        console.log('Loaded espn_s2 cookie from storage');
+    chrome.storage.local.get(['espnCookies'], (result) => {
+      if (result.espnCookies) {
+        currentCookies = result.espnCookies;
+        console.log('Loaded cookies from storage');
       }
     });
   } catch (error) {
-    console.error('Error loading espn_s2 cookie from storage:', error);
+    console.error('Error loading cookies from storage:', error);
   }
 }
 
-// Function to get espn_s2 cookie from ESPN domains
-function getEspnS2FromEspnDomains() {
+// Function to save cookie list configuration to storage
+function saveCookieListToStorage() {
+  try {
+    chrome.storage.local.set({
+      espnCookieList: cookieList
+    }, () => {
+      if (chrome.runtime.lastError) {
+        console.error('Error saving cookie list to Chrome storage:', chrome.runtime.lastError);
+      } else {
+        console.log('Cookie list saved to Chrome storage');
+      }
+    });
+  } catch (error) {
+    console.error('Error saving cookie list to storage:', error);
+  }
+}
+
+// Function to load cookie list configuration from storage
+function loadCookieListFromStorage() {
+  try {
+    chrome.storage.local.get(['espnCookieList'], (result) => {
+      if (result.espnCookieList) {
+        cookieList = result.espnCookieList;
+        console.log('Loaded cookie list from storage:', cookieList);
+      }
+    });
+  } catch (error) {
+    console.error('Error loading cookie list from storage:', error);
+  }
+}
+
+// Function to get cookies from ESPN domains
+function getCookiesFromEspnDomains() {
   const espnDomains = [
     'https://www.espn.com',
     'https://www.espn.co.uk',
@@ -46,69 +79,96 @@ function getEspnS2FromEspnDomains() {
     'https://www.espn.com.mx'
   ];
   
-  // Try to get cookie from each ESPN domain
-  espnDomains.forEach(domain => {
-    chrome.cookies.get({
-      url: domain,
-      name: 'espn_s2'
-    }, (cookie) => {
-      if (cookie) {
-        currentEspnS2Cookie = {
-          name: cookie.name,
-          value: cookie.value,
-          domain: cookie.domain,
-          path: cookie.path,
-          secure: cookie.secure,
-          httpOnly: cookie.httpOnly,
-          sameSite: cookie.sameSite,
-          expirationDate: cookie.expirationDate,
-          storeId: cookie.storeId,
-          timestamp: new Date().toISOString(),
-          url: domain
-        };
-        console.log('espn_s2 cookie found from ESPN domain:', currentEspnS2Cookie);
-        saveEspnS2ToStorage();
-      }
+  // Try to get each cookie from ESPN domains
+  cookieList.forEach(cookieName => {
+    espnDomains.forEach(domain => {
+      chrome.cookies.get({
+        url: domain,
+        name: cookieName
+      }, (cookie) => {
+        if (cookie) {
+          currentCookies[cookieName] = {
+            name: cookie.name,
+            value: cookie.value,
+            domain: cookie.domain,
+            path: cookie.path,
+            secure: cookie.secure,
+            httpOnly: cookie.httpOnly,
+            sameSite: cookie.sameSite,
+            expirationDate: cookie.expirationDate,
+            storeId: cookie.storeId,
+            timestamp: new Date().toISOString(),
+            url: domain
+          };
+          console.log(`${cookieName} cookie found from ESPN domain:`, currentCookies[cookieName]);
+          saveCookiesToStorage();
+        }
+      });
     });
   });
 }
 
 // Listen for messages from content script and popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'updateEspnS2') {
-    if (request.cookie) {
-      // Add timestamp and URL to cookie data
-      currentEspnS2Cookie = {
-        ...request.cookie,
-        timestamp: new Date().toISOString(),
-        url: request.url || 'unknown'
-      };
-      console.log('espn_s2 cookie updated:', currentEspnS2Cookie);
+  if (request.action === 'updateCookies') {
+    if (request.cookies) {
+      // Update cookies with timestamp and URL
+      Object.keys(request.cookies).forEach(cookieName => {
+        if (request.cookies[cookieName]) {
+          currentCookies[cookieName] = {
+            ...request.cookies[cookieName],
+            timestamp: new Date().toISOString(),
+            url: request.url || 'unknown'
+          };
+          console.log(`${cookieName} cookie updated:`, currentCookies[cookieName]);
+        } else {
+          // Remove cookie if it's null/undefined
+          delete currentCookies[cookieName];
+        }
+      });
     } else {
-      // If no cookie found on current page, try to get from ESPN domains
-      getEspnS2FromEspnDomains();
+      // If no cookies found on current page, try to get from ESPN domains
+      getCookiesFromEspnDomains();
     }
     
     // Save to storage
-    saveEspnS2ToStorage();
-    sendResponse({status: 'updated'});
-  } else if (request.action === 'getEspnS2') {
-    // If no cookie stored, try to get from ESPN domains
-    if (!currentEspnS2Cookie) {
-      getEspnS2FromEspnDomains();
+    saveCookiesToStorage();
+    
+    // Also try to get additional cookies from ESPN domains if we don't have all configured cookies
+    const configuredCookies = cookieList.filter(name => !currentCookies[name]);
+    if (configuredCookies.length > 0) {
+      console.log('Missing configured cookies, trying to get from ESPN domains:', configuredCookies);
+      getCookiesFromEspnDomains();
     }
-    sendResponse({cookie: currentEspnS2Cookie});
-  } else if (request.action === 'injectEspnS2') {
-    // Send espn_s2 cookie to content script for DOM injection
-    sendResponse({cookie: currentEspnS2Cookie});
+    
+    sendResponse({status: 'updated'});
+  } else if (request.action === 'getCookies') {
+    // If no cookies stored, try to get from ESPN domains
+    if (Object.keys(currentCookies).length === 0) {
+      getCookiesFromEspnDomains();
+    }
+    sendResponse({cookies: currentCookies});
+  } else if (request.action === 'injectCookies') {
+    // Send cookies to content script for DOM injection
+    console.log('Sending cookies for DOM injection:', currentCookies);
+    sendResponse({cookies: currentCookies});
+  } else if (request.action === 'getCookieList') {
+    // Send current cookie list configuration
+    sendResponse({cookieList: cookieList});
+  } else if (request.action === 'updateCookieList') {
+    // Update cookie list configuration
+    cookieList = request.cookieList || ['espn_s2'];
+    saveCookieListToStorage();
+    console.log('Cookie list updated:', cookieList);
+    sendResponse({status: 'updated'});
   }
 });
 
-// Monitor espn_s2 cookie changes specifically
+// Monitor cookie changes for all configured cookies
 chrome.cookies.onChanged.addListener((changeInfo) => {
   const cookie = changeInfo.cookie;
-  if (cookie.name === 'espn_s2' && cookie.domain.includes('espn')) {
-    currentEspnS2Cookie = {
+  if (cookieList.includes(cookie.name) && cookie.domain.includes('espn')) {
+    currentCookies[cookie.name] = {
       name: cookie.name,
       value: cookie.value,
       domain: cookie.domain,
@@ -122,7 +182,7 @@ chrome.cookies.onChanged.addListener((changeInfo) => {
       timestamp: new Date().toISOString()
     };
     
-    console.log('espn_s2 cookie changed:', currentEspnS2Cookie);
-    saveEspnS2ToStorage();
+    console.log(`${cookie.name} cookie changed:`, currentCookies[cookie.name]);
+    saveCookiesToStorage();
   }
 });

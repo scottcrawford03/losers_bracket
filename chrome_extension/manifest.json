@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "ESPN S2 Cookie Viewer",
+  "name": "ESPN Cookie Viewer",
   "version": "1.0",
-  "description": "A Chrome extension that displays the espn_s2 cookie value from ESPN websites",
+  "description": "A Chrome extension that displays configurable cookie values from ESPN websites",
   "permissions": [
     "cookies",
     "storage",
@@ -24,7 +24,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "ESPN S2 Cookie Viewer"
+    "default_title": "ESPN Cookie Viewer"
   },
   "icons": {
     "16": "icon16.png",

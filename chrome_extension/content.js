@@ -1,122 +1,147 @@
-// Content script for ESPN S2 Cookie Viewer extension
-// This script runs on all websites and injects espn_s2 cookie value into DOM
+// Content script for ESPN Cookie Viewer extension
+// This script runs on all websites and injects configured cookie values into DOM
 
-// Function to get espn_s2 cookie from the current page
-function getEspnS2Cookie() {
+// Function to get cookies from the current page based on cookie list
+function getCookiesFromPage() {
+  const foundCookies = {};
+  
   if (document.cookie) {
     const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
+    cookies.forEach(cookie => {
       const [name, value] = cookie.trim().split('=');
-      if (name === 'espn_s2' && value) {
-        return {
+      if (name && value) {
+        foundCookies[name] = {
           name: name,
           value: decodeURIComponent(value)
         };
       }
-    }
+    });
   }
-  return null;
+  
+  return foundCookies;
 }
 
-// Function to inject espn_s2 cookie value into DOM
-function injectEspnS2IntoDOM(cookieValue) {
-  // Remove existing espn-s2-cookie element if it exists
-  const existingElement = document.getElementById('espn-s2-cookie');
-  if (existingElement) {
-    existingElement.remove();
-  }
-
-  // Create new element with espn_s2 cookie value
-  const espnS2Element = document.createElement('div');
-  espnS2Element.id = 'espn-s2-cookie';
-  espnS2Element.setAttribute('data-espn-s2-value', cookieValue || '');
-  espnS2Element.style.display = 'none'; // Hidden by default
-  espnS2Element.textContent = cookieValue || '';
+// Function to inject cookies into DOM
+function injectCookiesIntoDOM(cookies) {
+  console.log('Injecting cookies into DOM:', cookies);
   
-  // Add to document head for easy access
-  document.head.appendChild(espnS2Element);
+  // Remove existing cookie elements
+  const existingElements = document.querySelectorAll('[id^="espn-cookie-"]');
+  existingElements.forEach(el => el.remove());
   
-  // Also add to body as a data attribute for easier access
-  document.body.setAttribute('data-espn-s2-cookie', cookieValue || '');
+  // Clear existing data attributes
+  const dataAttributes = document.body.getAttributeNames().filter(name => name.startsWith('data-espn-cookie-'));
+  dataAttributes.forEach(attr => document.body.removeAttribute(attr));
+  
+  // Inject each cookie
+  Object.keys(cookies).forEach(cookieName => {
+    const cookie = cookies[cookieName];
+    if (cookie && cookie.value) {
+      console.log(`Injecting cookie ${cookieName}:`, cookie.value);
+      
+      // Create element for each cookie
+      const cookieElement = document.createElement('div');
+      cookieElement.id = `espn-cookie-${cookieName}`;
+      cookieElement.setAttribute(`data-espn-cookie-${cookieName}`, cookie.value);
+      cookieElement.style.display = 'none'; // Hidden by default
+      cookieElement.textContent = cookie.value;
+      
+      // Add to document head for easy access
+      document.head.appendChild(cookieElement);
+      
+      // Also add to body as data attributes for easier access
+      document.body.setAttribute(`data-espn-cookie-${cookieName}`, cookie.value);
+      
+      console.log(`Cookie ${cookieName} injected successfully`);
+    }
+  });
   
   // Dispatch custom event for other scripts to listen to
-  const event = new CustomEvent('espnS2CookieUpdated', {
-    detail: { value: cookieValue || null }
+  const event = new CustomEvent('espnCookiesUpdated', {
+    detail: { cookies: cookies }
   });
   document.dispatchEvent(event);
+  
+  console.log('All cookies injected and event dispatched');
 }
 
-// Function to send espn_s2 cookie data to background script and inject into DOM
-function sendEspnS2Cookie() {
-  const espnS2Cookie = getEspnS2Cookie();
+// Function to send cookie data to background script and inject into DOM
+function sendCookiesToBackground() {
+  const allCookies = getCookiesFromPage();
   const url = window.location.href;
   
-  // Always inject into DOM, even if cookie is null
-  injectEspnS2IntoDOM(espnS2Cookie ? espnS2Cookie.value : null);
-  
-  if (espnS2Cookie) {
-    chrome.runtime.sendMessage({
-      action: 'updateEspnS2',
-      cookie: {
-        name: espnS2Cookie.name,
-        value: espnS2Cookie.value,
-        domain: window.location.hostname,
-        path: window.location.pathname
-      },
-      url: url
-    });
-  } else {
-    // Send null to indicate no espn_s2 cookie found
-    chrome.runtime.sendMessage({
-      action: 'updateEspnS2',
-      cookie: null,
-      url: url
-    });
-  }
-}
-
-// Function to get espn_s2 cookie from background script and inject into DOM
-function getAndInjectEspnS2FromBackground() {
-  chrome.runtime.sendMessage({action: 'injectEspnS2'}, (response) => {
-    if (response && response.cookie) {
-      injectEspnS2IntoDOM(response.cookie.value);
-    } else {
-      injectEspnS2IntoDOM(null);
+  // Get configured cookie list from background script
+  chrome.runtime.sendMessage({action: 'getCookieList'}, (response) => {
+    if (response && response.cookieList) {
+      const filteredCookies = {};
+      
+      // Only include cookies that are in the configured list
+      response.cookieList.forEach(cookieName => {
+        if (allCookies[cookieName]) {
+          filteredCookies[cookieName] = {
+            name: allCookies[cookieName].name,
+            value: allCookies[cookieName].value,
+            domain: window.location.hostname,
+            path: window.location.pathname
+          };
+        }
+      });
+      
+      // Send to background script first
+      chrome.runtime.sendMessage({
+        action: 'updateCookies',
+        cookies: filteredCookies,
+        url: url
+      });
+      
+      // Then get all cookies from background script (including cross-domain ones) and inject them
+      getAndInjectCookiesFromBackground();
     }
   });
 }
 
-// Send espn_s2 cookie when page loads
-sendEspnS2Cookie();
+// Function to get cookies from background script and inject into DOM
+function getAndInjectCookiesFromBackground() {
+  chrome.runtime.sendMessage({action: 'injectCookies'}, (response) => {
+    console.log('Received cookies from background script:', response);
+    if (response && response.cookies) {
+      injectCookiesIntoDOM(response.cookies);
+    } else {
+      console.log('No cookies received from background script');
+      injectCookiesIntoDOM({});
+    }
+  });
+}
 
-// Also try to get from background script (for cross-domain access)
-getAndInjectEspnS2FromBackground();
+// Only process cookies if we're on an ESPN page
+if (window.location.hostname.includes('espn')) {
+  // Send cookies when page loads
+  sendCookiesToBackground();
 
-// Monitor for cookie changes (limited capability in content script)
-let lastCookieString = document.cookie;
+  // Also try to get from background script (for cross-domain access)
+  getAndInjectCookiesFromBackground();
 
-// Check for cookie changes periodically
-setInterval(() => {
-  if (document.cookie !== lastCookieString) {
-    lastCookieString = document.cookie;
-    sendEspnS2Cookie();
-  }
-  // Also periodically check background script for updates
-  getAndInjectEspnS2FromBackground();
-}, 2000);
+  // Monitor for cookie changes only on ESPN pages
+  let lastCookieString = document.cookie;
 
-// Listen for storage events (cookies might change)
-window.addEventListener('storage', (e) => {
-  if (e.key === 'cookies' || e.key === null) {
-    sendEspnS2Cookie();
-    getAndInjectEspnS2FromBackground();
-  }
-});
+  // Check for cookie changes periodically (only on ESPN pages)
+  setInterval(() => {
+    if (document.cookie !== lastCookieString) {
+      lastCookieString = document.cookie;
+      sendCookiesToBackground();
+    }
+    // Also periodically check background script for updates
+    getAndInjectCookiesFromBackground();
+  }, 5000); // Increased interval to 5 seconds to reduce frequency
+} else {
+  // For non-ESPN pages, just get cookies from background script once
+  getAndInjectCookiesFromBackground();
+}
 
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'getEspnS2') {
-    const espnS2Cookie = getEspnS2Cookie();
-    sendResponse({cookie: espnS2Cookie, url: window.location.href});
+  if (request.action === 'getCookies') {
+    const cookies = getCookiesFromPage();
+    sendResponse({cookies: cookies, url: window.location.href});
   }
 });
