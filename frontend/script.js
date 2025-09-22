@@ -1,8 +1,9 @@
-// Fantasy Football Bracket Frontend
-class FantasyBracketViewer {
+// Fantasy Football Losers Bracket Frontend
+class FantasyLosersBracketViewer {
     constructor() {
-        this.matchups = [];
         this.teams = [];
+        this.winnersBracket = [];
+        this.losersBracket = [];
         this.viewMode = 'bracket'; // 'bracket' or 'list'
         this.isLoading = false; // Prevent multiple simultaneous API calls
         
@@ -68,7 +69,7 @@ class FantasyBracketViewer {
         }
         
         this.isLoading = true;
-        this.updateStatus('Loading Matchups...', 'Please wait while we fetch the current fantasy football matchups');
+        this.updateStatus('Loading Losers Bracket...', 'Please wait while we fetch the current elimination matchups');
         
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
@@ -76,7 +77,7 @@ class FantasyBracketViewer {
                 const espnS2Cookie = this.getEspnS2Cookie();
                 
                 // Build API URL with query parameter
-                let apiUrl = 'http://localhost:8001/v1/matchups';
+                let apiUrl = 'http://localhost:8001/v1/teams';
                 if (espnS2Cookie) {
                     apiUrl += `?espn_s2=${encodeURIComponent(espnS2Cookie)}`;
                     console.log('Using ESPN S2 cookie for API call');
@@ -91,13 +92,14 @@ class FantasyBracketViewer {
                 }
                 
                 const data = await response.json();
-                console.log('Matchups data:', data);
+                console.log('API Response data:', data);
                 
                 // Parse the data and display as bracket
-                this.matchups = data.currentMatchups || [];
                 this.teams = data.teams || [];
+                console.log('Teams data:', this.teams);
                 
-                if (this.matchups && this.matchups.length > 0) {
+                if (this.teams && this.teams.length > 0) {
+                    this.createBrackets();
                     this.showBracket();
                 } else {
                     this.showNoData();
@@ -136,7 +138,7 @@ class FantasyBracketViewer {
         }
         
         this.isLoading = true;
-        this.updateStatus('Loading Matchups...', 'Please wait while we fetch the current fantasy football matchups');
+        this.updateStatus('Loading Losers Bracket...', 'Please wait while we fetch the current elimination matchups');
         
         try {
             // Get ESPN S2 cookie value
@@ -158,13 +160,14 @@ class FantasyBracketViewer {
             }
             
             const data = await response.json();
-            console.log('Matchups data:', data);
+            console.log('API Response data:', data);
             
             // Parse the data and display as bracket
-            this.matchups = data.currentMatchups || [];
             this.teams = data.teams || [];
+            console.log('Teams data:', this.teams);
             
-            if (this.matchups && this.matchups.length > 0) {
+            if (this.teams && this.teams.length > 0) {
+                this.createBrackets();
                 this.showBracket();
             } else {
                 this.showNoData();
@@ -178,6 +181,125 @@ class FantasyBracketViewer {
         }
     }
 
+    // Create winners and losers brackets from teams data
+    createBrackets() {
+        // Sort teams by playoff seed
+        const sortedTeams = [...this.teams].sort((a, b) => (a.playoffSeed || 999) - (b.playoffSeed || 999));
+        
+        // Create winners bracket (seeds 1-6)
+        this.winnersBracket = this.createWinnersBracket(sortedTeams);
+        
+        // Create losers bracket (seeds 7-12)
+        this.losersBracket = this.createLosersBracket(sortedTeams);
+    }
+
+    // Create winners bracket matchups
+    createWinnersBracket(teams) {
+        const winnersTeams = teams.filter(team => team.playoffSeed >= 1 && team.playoffSeed <= 6);
+        const matchups = [];
+        
+        // Seeds 1 and 2 get byes
+        const seed1 = winnersTeams.find(team => team.playoffSeed === 1);
+        const seed2 = winnersTeams.find(team => team.playoffSeed === 2);
+        
+        if (seed1) {
+            matchups.push({
+                home: seed1,
+                away: { name: 'BYE', owner: 'Automatic Advance', currentScore: 0, playoffSeed: '', id: 'bye-1' },
+                isBye: true,
+                bracketType: 'winners'
+            });
+        }
+        
+        if (seed2) {
+            matchups.push({
+                home: seed2,
+                away: { name: 'BYE', owner: 'Automatic Advance', currentScore: 0, playoffSeed: '', id: 'bye-2' },
+                isBye: true,
+                bracketType: 'winners'
+            });
+        }
+        
+        // Seeds 3v6 and 4v5
+        const seed3 = winnersTeams.find(team => team.playoffSeed === 3);
+        const seed6 = winnersTeams.find(team => team.playoffSeed === 6);
+        const seed4 = winnersTeams.find(team => team.playoffSeed === 4);
+        const seed5 = winnersTeams.find(team => team.playoffSeed === 5);
+        
+        if (seed3 && seed6) {
+            matchups.push({
+                home: seed3,
+                away: seed6,
+                isBye: false,
+                bracketType: 'winners'
+            });
+        }
+        
+        if (seed4 && seed5) {
+            matchups.push({
+                home: seed4,
+                away: seed5,
+                isBye: false,
+                bracketType: 'winners'
+            });
+        }
+        
+        return matchups;
+    }
+
+    // Create losers bracket matchups
+    createLosersBracket(teams) {
+        const losersTeams = teams.filter(team => team.playoffSeed >= 7 && team.playoffSeed <= 12);
+        const matchups = [];
+        
+        // Seeds 11 and 12 get byes
+        const seed11 = losersTeams.find(team => team.playoffSeed === 11);
+        const seed12 = losersTeams.find(team => team.playoffSeed === 12);
+        
+        if (seed11) {
+            matchups.push({
+                home: seed11,
+                away: { name: 'BYE', owner: 'Automatic Advance', currentScore: 0, playoffSeed: '', id: 'bye-11' },
+                isBye: true,
+                bracketType: 'losers'
+            });
+        }
+        
+        if (seed12) {
+            matchups.push({
+                home: seed12,
+                away: { name: 'BYE', owner: 'Automatic Advance', currentScore: 0, playoffSeed: '', id: 'bye-12' },
+                isBye: true,
+                bracketType: 'losers'
+            });
+        }
+        
+        // Seeds 10v7 and 9v8
+        const seed10 = losersTeams.find(team => team.playoffSeed === 10);
+        const seed7 = losersTeams.find(team => team.playoffSeed === 7);
+        const seed9 = losersTeams.find(team => team.playoffSeed === 9);
+        const seed8 = losersTeams.find(team => team.playoffSeed === 8);
+        
+        if (seed10 && seed7) {
+            matchups.push({
+                home: seed10,
+                away: seed7,
+                isBye: false,
+                bracketType: 'losers'
+            });
+        }
+        
+        if (seed9 && seed8) {
+            matchups.push({
+                home: seed9,
+                away: seed8,
+                isBye: false,
+                bracketType: 'losers'
+            });
+        }
+        
+        return matchups;
+    }
 
     // Show bracket display
     showBracket() {
@@ -195,11 +317,12 @@ class FantasyBracketViewer {
         }
         
         // Update status
-        const matchupCount = this.matchups.length;
+        const winnersCount = this.winnersBracket.length;
+        const losersCount = this.losersBracket.length;
         const teamCount = this.teams.length;
         const espnS2Cookie = this.getEspnS2Cookie();
         const authStatus = espnS2Cookie ? 'with ESPN authentication' : 'without ESPN authentication';
-        this.updateStatus(`${matchupCount} Matchup(s) Found`, `${teamCount} teams, ${matchupCount} current matchups loaded successfully ${authStatus}`);
+        this.updateStatus(`${winnersCount + losersCount} Playoff Matchups Found`, `${teamCount} teams, ${winnersCount} winners bracket, ${losersCount} losers bracket matchups loaded successfully ${authStatus}`);
     }
 
     // Show no data state
@@ -241,15 +364,15 @@ class FantasyBracketViewer {
         }
         
         // Update status
-        this.updateStatus('No Matchups Found', 'Unable to fetch fantasy football matchups');
+        this.updateStatus('No Losers Bracket Found', 'Unable to fetch losers bracket tournament matchups');
     }
 
     // Render bracket view
     renderBracket() {
         const bracketDisplay = document.getElementById('bracketDisplay');
         
-        // Create bracket structure
-        const bracketHtml = this.createBracketHTML();
+        // Create bracket structure with both winners and losers brackets
+        const bracketHtml = this.createDualBracketHTML();
         bracketDisplay.innerHTML = bracketHtml;
     }
 
@@ -257,39 +380,76 @@ class FantasyBracketViewer {
     renderList() {
         const bracketDisplay = document.getElementById('bracketDisplay');
         
-        let listHtml = '<div class="matchup-list">';
-        this.matchups.forEach((matchup, index) => {
+        let listHtml = '<div class="brackets-container">';
+        
+        // Winners bracket
+        listHtml += '<div class="bracket-section">';
+        listHtml += '<h2 class="bracket-title winners-title">Winners Bracket</h2>';
+        listHtml += '<div class="matchup-list">';
+        this.winnersBracket.forEach((matchup, index) => {
             listHtml += this.createMatchupHTML(matchup, index);
         });
+        listHtml += '</div>';
+        listHtml += '</div>';
+        
+        // Losers bracket
+        listHtml += '<div class="bracket-section">';
+        listHtml += '<h2 class="bracket-title losers-title">Losers Bracket</h2>';
+        listHtml += '<div class="matchup-list">';
+        this.losersBracket.forEach((matchup, index) => {
+            listHtml += this.createMatchupHTML(matchup, index);
+        });
+        listHtml += '</div>';
+        listHtml += '</div>';
+        
         listHtml += '</div>';
         
         bracketDisplay.innerHTML = listHtml;
     }
 
-    // Create bracket HTML structure
-    createBracketHTML() {
-        if (this.matchups.length === 0) return '<div class="no-matchups">No matchups available</div>';
+    // Create dual bracket HTML structure
+    createDualBracketHTML() {
+        if (this.winnersBracket.length === 0 && this.losersBracket.length === 0) {
+            return '<div class="no-matchups">No matchups available</div>';
+        }
         
-        // Sort matchups by round (if available) or create rounds
-        const rounds = this.organizeMatchupsIntoRounds();
+        let bracketHtml = '<div class="brackets-container">';
         
-        let bracketHtml = '<div class="bracket">';
-        
-        rounds.forEach((round, roundIndex) => {
-            bracketHtml += `<div class="round round-${roundIndex + 1}">`;
-            bracketHtml += `<h3 class="round-title">${this.getRoundTitle(roundIndex, rounds.length)}</h3>`;
-            bracketHtml += '<div class="matchups">';
-            
-            round.forEach((matchup, matchupIndex) => {
-                bracketHtml += this.createMatchupHTML(matchup, matchupIndex);
+        // Winners bracket
+        if (this.winnersBracket.length > 0) {
+            bracketHtml += '<div class="bracket-section">';
+            bracketHtml += '<h2 class="bracket-title winners-title">Winners Bracket</h2>';
+            bracketHtml += '<div class="matchup-list">';
+            this.winnersBracket.forEach((matchup, index) => {
+                bracketHtml += this.createMatchupHTML(matchup, index);
             });
-            
             bracketHtml += '</div>';
             bracketHtml += '</div>';
-        });
+        }
+        
+        // Losers bracket
+        if (this.losersBracket.length > 0) {
+            bracketHtml += '<div class="bracket-section">';
+            bracketHtml += '<h2 class="bracket-title losers-title">Losers Bracket</h2>';
+            bracketHtml += '<div class="matchup-list">';
+            this.losersBracket.forEach((matchup, index) => {
+                bracketHtml += this.createMatchupHTML(matchup, index);
+            });
+            bracketHtml += '</div>';
+            bracketHtml += '</div>';
+        }
         
         bracketHtml += '</div>';
         return bracketHtml;
+    }
+
+    // Create bracket HTML structure (legacy method for single bracket)
+    createBracketHTML() {
+        if (this.winnersBracket.length === 0 && this.losersBracket.length === 0) {
+            return '<div class="no-matchups">No matchups available</div>';
+        }
+        
+        return this.createDualBracketHTML();
     }
 
     // Organize matchups into rounds for bracket display
@@ -307,22 +467,39 @@ class FantasyBracketViewer {
             const nextRoundSize = Math.ceil(currentRound.length / 2);
             const nextRound = [];
             
+            // Get losers from current round and sort by playoff seed for proper matching
+            const losers = this.getLosersFromRound(currentRound);
+            losers.sort((a, b) => {
+                const seedA = parseInt(a.playoffSeed) || 999;
+                const seedB = parseInt(b.playoffSeed) || 999;
+                return seedA - seedB; // Sort by seed ascending (1, 2, 3...)
+            });
+            
+            // Match highest seed with lowest seed, second highest with second lowest, etc.
             for (let i = 0; i < nextRoundSize; i++) {
-                nextRound.push({
-                    home: {
-                        name: `Winner of Match ${i * 2 + 1}`,
-                        points: 0,
-                        owner: '',
-                        id: `placeholder-${i * 2 + 1}`
-                    },
-                    away: {
-                        name: `Winner of Match ${i * 2 + 2}`,
-                        points: 0,
-                        owner: '',
-                        id: `placeholder-${i * 2 + 2}`
-                    },
-                    isPlaceholder: true
-                });
+                const homeIndex = i;
+                const awayIndex = losers.length - 1 - i;
+                
+                if (homeIndex < awayIndex) {
+                    nextRound.push({
+                        home: losers[homeIndex],
+                        away: losers[awayIndex],
+                        isPlaceholder: true
+                    });
+                } else if (homeIndex === awayIndex) {
+                    // If odd number of teams, the middle team gets a bye
+                    nextRound.push({
+                        home: losers[homeIndex],
+                        away: {
+                            name: 'BYE',
+                            points: 0,
+                            owner: 'Automatic Advance',
+                            id: 'bye',
+                            playoffSeed: ''
+                        },
+                        isPlaceholder: true
+                    });
+                }
             }
             
             rounds.push(nextRound);
@@ -332,46 +509,117 @@ class FantasyBracketViewer {
         return rounds;
     }
 
+    // Get losers from a round of matchups
+    getLosersFromRound(round) {
+        const losers = [];
+        
+        round.forEach(matchup => {
+            if (matchup.isPlaceholder) {
+                // For placeholder matchups, add both teams as they represent advancing teams
+                if (matchup.home && matchup.home.name !== 'BYE') {
+                    losers.push(matchup.home);
+                }
+                if (matchup.away && matchup.away.name !== 'BYE') {
+                    losers.push(matchup.away);
+                }
+            } else {
+                // For actual matchups, determine the loser
+                const homeScore = matchup.home.points || 0;
+                const awayScore = matchup.away.points || 0;
+                
+                if (homeScore < awayScore) {
+                    losers.push(matchup.home);
+                } else if (awayScore < homeScore) {
+                    losers.push(matchup.away);
+                }
+                // If scores are equal, we could handle this case differently if needed
+            }
+        });
+        
+        return losers;
+    }
+
     // Get round title based on round index
     getRoundTitle(roundIndex, totalRounds) {
         const roundNames = [
-            'First Round',
-            'Second Round', 
-            'Sweet 16',
-            'Elite 8',
-            'Final 4',
-            'Championship'
+            'Losers Bracket Round 1',
+            'Losers Bracket Round 2', 
+            'Losers Bracket Round 3',
+            'Losers Bracket Round 4',
+            'Losers Bracket Round 5',
+            'Losers Championship'
         ];
         
         if (roundIndex < roundNames.length) {
             return roundNames[roundIndex];
         }
         
-        return `Round ${roundIndex + 1}`;
+        return `Losers Bracket Round ${roundIndex + 1}`;
     }
 
     // Create individual matchup HTML
     createMatchupHTML(matchup, index) {
         const homeTeam = matchup.home;
         const awayTeam = matchup.away;
-        const homeScore = homeTeam.points || 0;
-        const awayScore = awayTeam.points || 0;
+        const homeScore = homeTeam.currentScore || 0;
+        const awayScore = awayTeam.currentScore || 0;
+        const homeSeed = homeTeam.playoffSeed || '';
+        const awaySeed = awayTeam.playoffSeed || '';
         const isPlaceholder = matchup.isPlaceholder || false;
+        const isBye = matchup.isBye || false;
+        const bracketType = matchup.bracketType || 'winners';
         
-        // Determine winner based on points
-        const homeWinner = homeScore > awayScore;
-        const awayWinner = awayScore > homeScore;
+        // Debug logging
+        if (!isBye) {
+            console.log(`Matchup ${index}: ${homeTeam.name} (${homeScore}) vs ${awayTeam.name} (${awayScore}) - ${bracketType} bracket`);
+        }
+        
+        // Determine winner/loser based on bracket type
+        let homeWinner = false;
+        let awayWinner = false;
+        let homeLoser = false;
+        let awayLoser = false;
+        
+        if (isBye) {
+            // For bye matchups, the non-bye team advances
+            if (bracketType === 'winners') {
+                homeWinner = awayTeam.name === 'BYE';
+                awayWinner = homeTeam.name === 'BYE';
+            } else {
+                // In losers bracket, the non-bye team advances (loses)
+                homeLoser = awayTeam.name === 'BYE';
+                awayLoser = homeTeam.name === 'BYE';
+            }
+        } else if (bracketType === 'winners') {
+            // In winners bracket, higher score wins
+            homeWinner = homeScore > awayScore;
+            awayWinner = awayScore > homeScore;
+        } else {
+            // In losers bracket, lower score advances (loses)
+            homeLoser = homeScore < awayScore;
+            awayLoser = awayScore < homeScore;
+        }
         
         return `
-            <div class="matchup ${isPlaceholder ? 'placeholder' : ''}" data-index="${index}">
-                <div class="team team1 ${homeWinner ? 'winner' : ''}">
-                    <span class="team-name">${homeTeam.name}</span>
-                    <span class="score">${homeScore.toFixed(2)}</span>
+            <div class="matchup ${isPlaceholder ? 'placeholder' : ''} ${isBye ? 'bye-matchup' : ''}" data-index="${index}">
+                <div class="team team1 ${homeWinner ? 'winner' : ''} ${homeLoser ? 'loser-advancing' : ''} ${homeTeam.name === 'BYE' ? 'bye-team' : ''}">
+                    <div class="team-header">
+                        <span class="team-name">${homeTeam.name}</span>
+                        ${homeSeed ? `<span class="playoff-seed">#${homeSeed}</span>` : ''}
+                    </div>
+                    <span class="score">${homeTeam.name === 'BYE' ? 'BYE' : homeScore.toFixed(2)}</span>
+                    ${homeWinner ? '<span class="advancing-indicator winner-indicator">→ ADVANCING</span>' : ''}
+                    ${homeLoser ? '<span class="advancing-indicator loser-indicator">→ ADVANCING</span>' : ''}
                 </div>
                 <div class="vs">vs</div>
-                <div class="team team2 ${awayWinner ? 'winner' : ''}">
-                    <span class="team-name">${awayTeam.name}</span>
-                    <span class="score">${awayScore.toFixed(2)}</span>
+                <div class="team team2 ${awayWinner ? 'winner' : ''} ${awayLoser ? 'loser-advancing' : ''} ${awayTeam.name === 'BYE' ? 'bye-team' : ''}">
+                    <div class="team-header">
+                        <span class="team-name">${awayTeam.name}</span>
+                        ${awaySeed ? `<span class="playoff-seed">#${awaySeed}</span>` : ''}
+                    </div>
+                    <span class="score">${awayTeam.name === 'BYE' ? 'BYE' : awayScore.toFixed(2)}</span>
+                    ${awayWinner ? '<span class="advancing-indicator winner-indicator">→ ADVANCING</span>' : ''}
+                    ${awayLoser ? '<span class="advancing-indicator loser-indicator">→ ADVANCING</span>' : ''}
                 </div>
                 <div class="matchup-info">
                     <div class="owner-info">
@@ -438,5 +686,5 @@ class FantasyBracketViewer {
 
 // Initialize viewer when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    window.fantasyBracketViewer = new FantasyBracketViewer();
+    window.fantasyLosersBracketViewer = new FantasyLosersBracketViewer();
 });

@@ -7,13 +7,13 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%);
     min-height: 100vh;
     color: #333;
 }
 
 .container {
-    max-width: 800px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
 }
@@ -74,12 +74,13 @@ body {
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: linear-gradient(45deg, #667eea, #764ba2);
+    background: linear-gradient(45deg, #e74c3c, #c0392b);
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
     font-size: 24px;
+    border: 2px solid #a93226;
 }
 
 .status-content h2 {
@@ -123,7 +124,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    min-width: 280px;
+    min-width: 350px;
 }
 
 .round-title {
@@ -133,9 +134,10 @@ body {
     color: #333;
     margin-bottom: 20px;
     padding: 10px;
-    background: linear-gradient(45deg, #667eea, #764ba2);
+    background: linear-gradient(45deg, #e74c3c, #c0392b);
     color: white;
     border-radius: 8px;
+    border: 2px solid #a93226;
 }
 
 .matchups {
@@ -173,32 +175,83 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 12px;
+    padding: 12px 16px;
     margin: 4px 0;
     border-radius: 8px;
     background: white;
     border: 1px solid #e1e5e9;
     transition: all 0.3s ease;
+    min-height: 60px;
+    gap: 12px;
+}
+
+.team-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
 }
 
 .team.winner {
-    background: linear-gradient(45deg, #4CAF50, #45a049);
+    background: linear-gradient(45deg, #27ae60, #229954);
     color: white;
-    border-color: #4CAF50;
+    border-color: #27ae60;
     font-weight: 600;
+    box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+}
+
+.team.winner .playoff-seed {
+    color: white;
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.team.loser-advancing {
+    background: linear-gradient(45deg, #e74c3c, #c0392b);
+    color: white;
+    border-color: #e74c3c;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+    position: relative;
+}
+
+.team.loser-advancing .playoff-seed {
+    color: white;
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
 }
 
 .team-name {
     font-weight: 500;
     font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.playoff-seed {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #e74c3c;
+    background: rgba(231, 76, 60, 0.1);
+    padding: 2px 6px;
+    border-radius: 10px;
+    border: 1px solid rgba(231, 76, 60, 0.2);
 }
 
 .score {
     font-weight: 700;
     font-size: 1.1rem;
     background: rgba(0, 0, 0, 0.1);
-    padding: 2px 8px;
+    padding: 4px 10px;
     border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: 60px;
+    text-align: center;
 }
 
 .vs {
@@ -241,12 +294,13 @@ body {
 /* List View */
 .matchup-list {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
     gap: 20px;
 }
 
 .matchup-list .matchup {
-    min-height: 100px;
+    min-height: 120px;
+    min-width: 380px;
 }
 
 /* No Matchups */
@@ -416,14 +470,15 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(45deg, #667eea, #764ba2);
+    background: linear-gradient(45deg, #e74c3c, #c0392b);
     color: white;
+    border: 2px solid #a93226;
 }
 
 .btn-primary:hover {
-    background: linear-gradient(45deg, #764ba2, #667eea);
+    background: linear-gradient(45deg, #c0392b, #a93226);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
 }
 
 .btn-secondary {
@@ -501,14 +556,27 @@ body {
         grid-template-columns: 1fr;
     }
     
+    .matchup-list .matchup {
+        min-width: 300px;
+    }
+    
     .team {
         flex-direction: column;
         gap: 5px;
         text-align: center;
     }
     
+    .team-header {
+        align-items: center;
+    }
+    
     .team-name {
         font-size: 0.8rem;
+    }
+    
+    .playoff-seed {
+        font-size: 0.7rem;
+        padding: 1px 4px;
     }
     
     .score {
@@ -558,6 +626,11 @@ body {
     
     .team-name {
         font-size: 0.75rem;
+    }
+    
+    .playoff-seed {
+        font-size: 0.65rem;
+        padding: 1px 3px;
     }
     
     .score {
